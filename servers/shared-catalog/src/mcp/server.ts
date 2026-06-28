@@ -39,6 +39,16 @@ const toolDefinitions = [
     name: "catalog.render",
     description: "Returns ready-to-use content with normalized metadata.",
     inputSchema: zodToJsonSchema(renderCatalogInputSchema)
+  },
+  {
+    name: "catalog.update_info",
+    description:
+      "Returns read-only installation and update information for this MCP server.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: {}
+    }
   }
 ];
 

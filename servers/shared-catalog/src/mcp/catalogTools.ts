@@ -15,7 +15,8 @@ export const catalogToolNames = [
   "catalog.list",
   "catalog.get",
   "catalog.search",
-  "catalog.render"
+  "catalog.render",
+  "catalog.update_info"
 ] as const;
 
 export type CatalogToolName = (typeof catalogToolNames)[number];
@@ -39,6 +40,8 @@ export function executeCatalogTool(
       ).map(summarizeItem);
     case "catalog.render":
       return renderCatalog(index, parseInput(renderCatalogInputSchema, rawInput));
+    case "catalog.update_info":
+      return getUpdateInfo();
     default:
       throw new Error(`Unknown catalog tool: ${name}`);
   }
@@ -81,5 +84,30 @@ function summarizeItem(item: {
     version: item.version,
     kind: item.kind,
     uri: item.uri
+  };
+}
+
+function getUpdateInfo(): {
+  packageName: string;
+  currentVersion: string;
+  tagPrefix: string;
+  releaseTagPattern: string;
+  installerUrl: string;
+  installCommand: string;
+  updateCommand: string;
+  note: string;
+} {
+  const installerUrl =
+    "https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh";
+
+  return {
+    packageName: "shared-catalog-mcp-server",
+    currentVersion: "0.1.0",
+    tagPrefix: "shared-catalog-v",
+    releaseTagPattern: "shared-catalog-vX.Y.Z",
+    installerUrl,
+    installCommand: `curl -fsSL ${installerUrl} | bash`,
+    updateCommand: `curl -fsSL ${installerUrl} | bash`,
+    note: "This tool is read-only. It does not install or update the local server."
   };
 }

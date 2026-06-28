@@ -71,6 +71,12 @@ Install or update the latest `shared-catalog` release:
 scripts/install-latest-shared-catalog.sh
 ```
 
+Install or update without cloning this repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh | bash
+```
+
 You can also install a specific released asset directly:
 
 ```bash
@@ -89,6 +95,8 @@ Then use the installed binary in an MCP client configuration:
   }
 }
 ```
+
+The `shared-catalog` MCP server also exposes `catalog.update_info`, a read-only tool that returns the current server version, tag pattern, public installer URL, and recommended install/update commands.
 
 ## Servers
 

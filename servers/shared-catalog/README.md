@@ -37,6 +37,12 @@ Install or update the latest `shared-catalog` release with the repository script
 scripts/install-latest-shared-catalog.sh
 ```
 
+Install or update without cloning the repository:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh | bash
+```
+
 Install from a `.tgz` file downloaded from the release:
 
 ```bash
@@ -91,12 +97,13 @@ Release checklist:
 
 ## MCP Capabilities
 
-The server exposes four safe tools:
+The server exposes five safe tools:
 
 - `catalog.list`: lists items by `kind`, `tag`, and optional text query.
 - `catalog.get`: returns a complete catalog item by `id`.
 - `catalog.search`: searches item names, descriptions, tags, and content.
 - `catalog.render`: returns content ready to use with normalized metadata.
+- `catalog.update_info`: returns read-only install and update information for this MCP server.
 
 It also exposes resources with the `catalog://{kind}/{id}` URI format and versioned catalog prompts as native MCP prompts.
 

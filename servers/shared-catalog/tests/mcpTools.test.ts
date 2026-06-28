@@ -46,4 +46,23 @@ describe("MCP catalog tool contract", () => {
       }
     });
   });
+
+  it("returns read-only update information", async () => {
+    const index = await loadCatalog(rootDir);
+    const info = executeCatalogTool(index, "catalog.update_info", {});
+
+    expect(info).toEqual({
+      packageName: "shared-catalog-mcp-server",
+      currentVersion: "0.1.0",
+      tagPrefix: "shared-catalog-v",
+      releaseTagPattern: "shared-catalog-vX.Y.Z",
+      installerUrl:
+        "https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh",
+      installCommand:
+        "curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh | bash",
+      updateCommand:
+        "curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-shared-catalog.sh | bash",
+      note: "This tool is read-only. It does not install or update the local server."
+    });
+  });
 });

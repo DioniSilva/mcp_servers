@@ -50,6 +50,7 @@ For `servers/shared-catalog`:
 - Releases are automated by GitHub Actions on pushes to `main`.
 - Use server-prefixed tags, for example `shared-catalog-v0.1.0`.
 - Installer scripts must resolve the newest release for their own server tag prefix instead of relying on GitHub `releases/latest`, because this is a monorepo.
+- MCP update-info tools must be read-only and may return installer URLs or commands, but must not execute installation or update actions.
 - Run `npm run release:check -w servers/<name>` before changing release workflows.
 - Use `npm run release:pack -w servers/<name>` only for local packaging checks.
 - Do not commit `.tgz`, `dist/`, `node_modules/`, or local cache files.
