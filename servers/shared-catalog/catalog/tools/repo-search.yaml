@@ -1,0 +1,26 @@
+id: repo-search
+name: Repository Search
+description: Reusable definition for searching text in repository files.
+tags:
+  - repo
+  - search
+  - coding
+version: 0.1.0
+kind: tool
+contentPath: catalog/tools/repo-search.yaml
+inputSchema:
+  type: object
+  additionalProperties: false
+  properties:
+    query:
+      type: string
+      description: Text or regex to search for.
+    path:
+      type: string
+      description: Optional base path.
+  required:
+    - query
+clientHints:
+  execution: not-supported
+  recommendedCommand: rg
+notes: This definition is catalog-only. The MCP server does not execute the search.
