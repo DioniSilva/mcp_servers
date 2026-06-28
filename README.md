@@ -80,7 +80,7 @@ curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts
 You can also install a specific released asset directly:
 
 ```bash
-npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.1.0/shared-catalog-mcp-server-0.1.0.tgz
+npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.2.0/shared-catalog-mcp-server-0.2.0.tgz
 ```
 
 Then use the installed binary in an MCP client configuration:
