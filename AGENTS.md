@@ -52,10 +52,11 @@ For `servers/obsidian-integration`:
 
 - The server operates through the `obsidian` CLI and requires Obsidian to be open.
 - `OBSIDIAN_VAULT` is optional and should map to `vault=<name>` CLI arguments.
-- If `OBSIDIAN_VAULT` is missing, operational tools must return `OBSIDIAN_VAULT_DECISION_REQUIRED` and the agent must ask whether to use the most recently focused vault or create/select a vault before retrying.
+- If `OBSIDIAN_VAULT` is missing, operational tools must return `OBSIDIAN_VAULT_DECISION_REQUIRED`, including known vaults when available, and the agent must ask whether to use the most recently focused vault or create/select a vault before retrying.
 - `obsidian.health` must remain available even when the CLI is missing.
 - Full CLI passthrough must use argv arrays with `spawn`, never shell execution.
-- Destructive command names must remain blocked by the minimal denylist.
+- Destructive command names must return `OBSIDIAN_COMMAND_CONFIRMATION_REQUIRED`; execute them only after explicit user approval with the matching `confirmationId`.
+- `obsidian.kb_create` should resolve the target vault and write scaffolds through validated filesystem paths so directories and `.base` files are created exactly.
 - KB scaffolds follow the Karpathy pattern: immutable raw sources, LLM-owned wiki pages, index, log, schema, outputs, and assets.
 
 ## Release

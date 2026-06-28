@@ -13,6 +13,8 @@ clientHints:
   command: obsidian-integration-mcp
 tools:
   - obsidian.health
+  - obsidian.vaults
+  - obsidian.vault_info
   - obsidian.search
   - obsidian.read
   - obsidian.create
@@ -20,4 +22,4 @@ tools:
   - obsidian.cli_run
   - obsidian.kb_create
   - obsidian.kb_status
-notes: These tools are provided by the separate Obsidian Integration MCP Server. Unlike shared-catalog, that server can modify an Obsidian vault.
+notes: These tools are provided by the separate Obsidian Integration MCP Server. Unlike shared-catalog, that server can modify an Obsidian vault. Destructive passthrough commands require explicit confirmation before execution.

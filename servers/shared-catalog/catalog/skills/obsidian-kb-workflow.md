@@ -15,7 +15,8 @@ Use the `obsidian-integration` MCP server to create and maintain an LLM knowledg
 1. Install the server with the public installer.
 2. Configure an MCP client with `obsidian-integration-mcp`.
 3. Run `obsidian.health` first.
-4. Run `obsidian.kb_create` to scaffold:
+4. If no vault target is configured, use `obsidian.vaults` or `obsidian.vault_info`, then ask the user whether to use a known vault, the recent vault, or a newly opened vault.
+5. Run `obsidian.kb_create` with an explicit `vault` when possible to scaffold:
    - `raw/`
    - `wiki/`
    - `outputs/`
@@ -24,7 +25,7 @@ Use the `obsidian-integration` MCP server to create and maintain an LLM knowledg
    - `wiki/index.md`
    - `wiki/log.md`
    - optional `KB Dashboard.base`
-5. Treat raw sources as immutable.
-6. Let the LLM maintain wiki pages, backlinks, index, and log.
-7. File durable query outputs back into the wiki when useful.
-8. Periodically lint for contradictions, stale claims, orphan pages, and missing concepts.
+6. Treat raw sources as immutable.
+7. Let the LLM maintain wiki pages, backlinks, index, and log.
+8. File durable query outputs back into the wiki when useful.
+9. Periodically lint for contradictions, stale claims, orphan pages, and missing concepts.

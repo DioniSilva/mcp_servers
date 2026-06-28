@@ -19,7 +19,8 @@ import {
   kbStatusInputSchema,
   readInputSchema,
   searchInputSchema,
-  toolResultJson
+  toolResultJson,
+  vaultInfoInputSchema
 } from "./tools.js";
 
 const resourceRoot = path.resolve(
@@ -66,6 +67,16 @@ const tools = [
     inputSchema: { type: "object", additionalProperties: false, properties: {} }
   },
   {
+    name: "obsidian.vaults",
+    description: "Lists known Obsidian vaults reported by the Obsidian CLI.",
+    inputSchema: { type: "object", additionalProperties: false, properties: {} }
+  },
+  {
+    name: "obsidian.vault_info",
+    description: "Resolves an Obsidian vault name or the recent vault to its local path.",
+    inputSchema: zodToJsonSchema(vaultInfoInputSchema)
+  },
+  {
     name: "obsidian.search",
     description: "Searches Obsidian notes via the Obsidian CLI.",
     inputSchema: zodToJsonSchema(searchInputSchema)
@@ -105,7 +116,7 @@ const tools = [
 
 export function createMcpServer(): Server {
   const server = new Server(
-    { name: "obsidian-integration-mcp-server", version: "0.2.0" },
+    { name: "obsidian-integration-mcp-server", version: "0.3.0" },
     { capabilities: { tools: {}, resources: {} } }
   );
 

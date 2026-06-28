@@ -78,7 +78,9 @@ Before using `obsidian-integration`, confirm:
 obsidian help
 ```
 
-Obsidian must be open. Optionally set `OBSIDIAN_VAULT` in the MCP client environment to target a specific vault. If `OBSIDIAN_VAULT` is missing, operational tools return `OBSIDIAN_VAULT_DECISION_REQUIRED`; the agent must explicitly ask whether to use the most recently focused vault or create/select a vault before retrying.
+Obsidian must be open. Optionally set `OBSIDIAN_VAULT` in the MCP client environment to target a specific vault. If `OBSIDIAN_VAULT` is missing, operational tools return `OBSIDIAN_VAULT_DECISION_REQUIRED`, including known vaults when available; the agent must explicitly ask whether to use the most recently focused vault or create/select a vault before retrying.
+
+Use `obsidian.vaults` and `obsidian.vault_info` to inspect available vaults before running operations. Destructive passthrough commands return `OBSIDIAN_COMMAND_CONFIRMATION_REQUIRED` and require explicit user approval plus the matching `confirmationId` before execution. `obsidian.kb_create` writes scaffolds through validated vault filesystem paths so directories and `.base` files are created exactly.
 
 ## Installing a Server from a GitHub Release
 
@@ -99,7 +101,7 @@ curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts
 You can also install a specific released asset directly:
 
 ```bash
-npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.4.0/shared-catalog-mcp-server-0.4.0.tgz
+npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.5.0/shared-catalog-mcp-server-0.5.0.tgz
 ```
 
 Then use the installed binary in an MCP client configuration:

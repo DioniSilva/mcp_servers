@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { assertAllowedObsidianArgs } from "../obsidian/guardrails.js";
+import {
+  commandConfirmationInvalidPayload,
+  commandConfirmationRequiredPayload,
+  findDeniedObsidianCommand,
+  isCommandConfirmationValid,
+  type CommandConfirmationInvalidPayload,
+  type CommandConfirmationRequiredPayload
+} from "../obsidian/guardrails.js";
 import {
   isObsidianCliAvailable,
   missingCliPayload,
@@ -10,8 +17,17 @@ import {
   vaultDecisionRequiredPayload
 } from "../obsidian/cli.js";
 import { createKbScaffold } from "../obsidian/kb.js";
+import {
+  ensureVaultDirs,
+  listKnownVaults,
+  resolveVaultInfo,
+  writeVaultFile,
+  type ObsidianVault,
+  type VaultInfo
+} from "../obsidian/vaults.js";
 
 const vaultSelectionSchema = z.object({
+  vault: z.string().min(1).optional(),
   useRecentVault: z.boolean().default(false)
 });
 
@@ -49,7 +65,9 @@ export const appendInputSchema = z
   });
 
 export const cliRunInputSchema = z.object({
-  args: z.array(z.string().min(1)).min(1)
+  args: z.array(z.string().min(1)).min(1),
+  confirmDestructive: z.boolean().default(false),
+  confirmationId: z.string().optional()
 }).merge(vaultSelectionSchema);
 
 export const kbCreateInputSchema = z.object({
@@ -63,6 +81,17 @@ export const kbStatusInputSchema = z.object({
   rootPath: z.string().min(1)
 }).merge(vaultSelectionSchema);
 
+export const vaultInfoInputSchema = z.object({
+  vault: z.string().min(1).optional(),
+  useRecentVault: z.boolean().default(false)
+});
+
+type OperationalResult =
+  | ObsidianCommandResult
+  | MissingCliPayload
+  | VaultDecisionRequiredPayload
+  | CommandConfirmationRequiredPayload;
+
 export async function executeObsidianTool(
   name: string,
   rawInput: unknown
@@ -70,6 +99,10 @@ export async function executeObsidianTool(
   switch (name) {
     case "obsidian.health":
       return obsidianHealth();
+    case "obsidian.vaults":
+      return obsidianVaults();
+    case "obsidian.vault_info":
+      return obsidianVaultInfo(vaultInfoInputSchema.parse(rawInput));
     case "obsidian.search":
       return runOperationalToolFromInput(
         buildSearchArgs(searchInputSchema.parse(rawInput)),
@@ -90,11 +123,8 @@ export async function executeObsidianTool(
         buildAppendArgs(appendInputSchema.parse(rawInput)),
         appendInputSchema.parse(rawInput)
       );
-    case "obsidian.cli_run": {
-      const input = cliRunInputSchema.parse(rawInput);
-      assertAllowedObsidianArgs(input.args);
-      return runOperationalToolFromInput(input.args, input);
-    }
+    case "obsidian.cli_run":
+      return runCliPassthrough(cliRunInputSchema.parse(rawInput));
     case "obsidian.kb_create":
       return createKnowledgeBase(kbCreateInputSchema.parse(rawInput));
     case "obsidian.kb_status":
@@ -144,81 +174,173 @@ export function buildAppendArgs(input: z.infer<typeof appendInputSchema>): strin
 
 async function obsidianHealth(): Promise<{
   cliAvailable: boolean;
+  knownVaults: ObsidianVault[] | null;
   vaultTarget: string | null;
+  resolvedVaultPath: string | null;
   requiresVaultDecision: boolean;
   vaultDecision?: VaultDecisionRequiredPayload;
   guidance: readonly string[];
 }> {
   const vaultTarget = process.env.OBSIDIAN_VAULT ?? null;
+  const [cliAvailable, knownVaultsResult] = await Promise.all([
+    isObsidianCliAvailable(),
+    listKnownVaults()
+  ]);
+  const knownVaults = Array.isArray(knownVaultsResult) ? knownVaultsResult : null;
+  const resolvedVaultPath = vaultTarget
+    ? knownVaults?.find((vault) => vault.name === vaultTarget)?.path ?? null
+    : null;
+
   return {
-    cliAvailable: await isObsidianCliAvailable(),
+    cliAvailable,
+    knownVaults,
     vaultTarget,
+    resolvedVaultPath,
     requiresVaultDecision: !vaultTarget,
-    vaultDecision: vaultTarget ? undefined : vaultDecisionRequiredPayload(),
+    vaultDecision: vaultTarget ? undefined : vaultDecisionRequiredPayload(knownVaults ?? undefined),
     guidance: missingCliPayload().guidance
   };
 }
 
 async function runOperationalTool(
   args: string[],
-  options: { useRecentVault?: boolean } = {}
-): Promise<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload> {
-  assertAllowedObsidianArgs(args);
-  return runObsidian(args, { useRecentVault: options.useRecentVault });
+  options: { useRecentVault?: boolean; vault?: string } = {}
+): Promise<OperationalResult> {
+  const finalArgs = withExplicitVault(args, options.vault);
+  const hasVaultTarget =
+    finalArgs.some((arg) => arg.startsWith("vault=")) || Boolean(process.env.OBSIDIAN_VAULT);
+  if (!hasVaultTarget && !options.useRecentVault) {
+    const knownVaults = await listKnownVaults();
+    return vaultDecisionRequiredPayload(Array.isArray(knownVaults) ? knownVaults : undefined);
+  }
+
+  const denied = findDeniedObsidianCommand(finalArgs);
+  if (denied) {
+    return commandConfirmationRequiredPayload(finalArgs);
+  }
+  return runObsidian(finalArgs, { useRecentVault: options.useRecentVault });
 }
 
 async function runOperationalToolFromInput(
   args: string[],
-  input: { useRecentVault?: boolean }
-): Promise<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload> {
-  return runOperationalTool(args, { useRecentVault: input.useRecentVault });
+  input: { useRecentVault?: boolean; vault?: string }
+): Promise<OperationalResult> {
+  return runOperationalTool(args, {
+    useRecentVault: input.useRecentVault,
+    vault: input.vault
+  });
+}
+
+async function runCliPassthrough(input: z.infer<typeof cliRunInputSchema>): Promise<
+  | OperationalResult
+  | CommandConfirmationInvalidPayload
+> {
+  const finalArgs = withExplicitVault(input.args, input.vault);
+  const denied = findDeniedObsidianCommand(finalArgs);
+
+  if (denied) {
+    if (!input.confirmDestructive) {
+      return commandConfirmationRequiredPayload(finalArgs);
+    }
+    if (!isCommandConfirmationValid(finalArgs, input)) {
+      return commandConfirmationInvalidPayload(finalArgs, input.confirmationId);
+    }
+  }
+
+  return runObsidian(finalArgs, { useRecentVault: input.useRecentVault });
 }
 
 async function createKnowledgeBase(
   input: z.infer<typeof kbCreateInputSchema>
 ): Promise<{
   rootPath: string;
-  created: Array<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload>;
+  vault: VaultInfo | null;
+  created: Array<{ path: string; ok: true }>;
+  error?: MissingCliPayload | VaultDecisionRequiredPayload | { code: string; message: string };
 }> {
   const scaffold = createKbScaffold(input);
-  const created = [];
+  const vault = await resolveVaultInfo(input);
 
-  for (const file of scaffold.files) {
-    const result = await runOperationalTool([
-      "create",
-      `name=${file.path}`,
-      `content=${file.content}`,
-      "silent",
-      "overwrite"
-    ], { useRecentVault: input.useRecentVault });
-    created.push(result);
-
-    if ("code" in result) {
-      break;
-    }
+  if ("code" in vault) {
+    return { rootPath: scaffold.rootPath, vault: null, created: [], error: vault };
   }
 
-  return { rootPath: scaffold.rootPath, created };
+  if (!vault.available || !vault.path) {
+    const knownVaults = await listKnownVaults();
+    return {
+      rootPath: scaffold.rootPath,
+      vault,
+      created: [],
+      error: vaultDecisionRequiredPayload(Array.isArray(knownVaults) ? knownVaults : undefined)
+    };
+  }
+
+  try {
+    await ensureVaultDirs(
+      vault.path,
+      ["raw", "wiki", "outputs", "assets"].map((dir) => `${scaffold.rootPath}/${dir}`)
+    );
+
+    const created = [];
+    for (const file of scaffold.files) {
+      await writeVaultFile(vault.path, file.path, file.content);
+      created.push({ path: file.path, ok: true as const });
+    }
+
+    return { rootPath: scaffold.rootPath, vault, created };
+  } catch (error) {
+    return {
+      rootPath: scaffold.rootPath,
+      vault,
+      created: [],
+      error: {
+        code: "OBSIDIAN_KB_CREATE_FAILED",
+        message: error instanceof Error ? error.message : String(error)
+      }
+    };
+  }
 }
 
 async function kbStatus(input: z.infer<typeof kbStatusInputSchema>): Promise<{
   rootPath: string;
-  index: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
-  log: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
-  schema: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
+  index: OperationalResult;
+  log: OperationalResult;
+  schema: OperationalResult;
+  missing: string[];
+  complete: boolean;
 }> {
   const root = input.rootPath.replace(/^\/+|\/+$/g, "");
   const [index, log, schema] = await Promise.all([
-    runOperationalTool(["read", `path=${root}/wiki/index.md`], {
-      useRecentVault: input.useRecentVault
-    }),
-    runOperationalTool(["read", `path=${root}/wiki/log.md`], {
-      useRecentVault: input.useRecentVault
-    }),
-    runOperationalTool(["read", `path=${root}/schema.md`], {
-      useRecentVault: input.useRecentVault
-    })
+    runOperationalTool(["read", `path=${root}/wiki/index.md`], input),
+    runOperationalTool(["read", `path=${root}/wiki/log.md`], input),
+    runOperationalTool(["read", `path=${root}/schema.md`], input)
   ]);
+  const entries = [
+    ["wiki/index.md", index],
+    ["wiki/log.md", log],
+    ["schema.md", schema]
+  ] as const;
+  const missing = entries
+    .filter(([, result]) => "ok" in result && !result.ok)
+    .map(([path]) => `${root}/${path}`);
+  const complete = entries.every(([, result]) => "ok" in result && result.ok);
 
-  return { rootPath: root, index, log, schema };
+  return { rootPath: root, index, log, schema, missing, complete };
+}
+
+async function obsidianVaults(): Promise<ObsidianVault[] | MissingCliPayload> {
+  return listKnownVaults();
+}
+
+async function obsidianVaultInfo(
+  input: z.infer<typeof vaultInfoInputSchema>
+): Promise<VaultInfo | MissingCliPayload> {
+  return resolveVaultInfo(input);
+}
+
+function withExplicitVault(args: string[], vault: string | undefined): string[] {
+  if (!vault || args.some((arg) => arg.startsWith("vault="))) {
+    return args;
+  }
+  return [`vault=${vault}`, ...args];
 }

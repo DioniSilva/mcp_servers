@@ -37,7 +37,7 @@ Configure an MCP client with:
 }
 ```
 
-`OBSIDIAN_VAULT` is optional but operational tools will not silently use the most recently focused vault. If `OBSIDIAN_VAULT` is not set, tools return `OBSIDIAN_VAULT_DECISION_REQUIRED` and the agent must explicitly ask whether the user wants to use the most recently focused vault or create/select a vault first.
+`OBSIDIAN_VAULT` is optional but operational tools will not silently use the most recently focused vault. If `OBSIDIAN_VAULT` is not set, tools return `OBSIDIAN_VAULT_DECISION_REQUIRED`, including known vaults when available. The agent must explicitly ask whether the user wants to use the most recently focused vault or create/select a vault first.
 
 After explicit user confirmation, the agent can retry the same operation with:
 
@@ -47,11 +47,13 @@ After explicit user confirmation, the agent can retry the same operation with:
 }
 ```
 
-If the user wants a new vault, create or open it in Obsidian first, then configure `OBSIDIAN_VAULT` in the MCP client environment.
+If the user wants a new vault, create or open it in Obsidian first, then configure `OBSIDIAN_VAULT` in the MCP client environment or pass `vault` to the specific tool call.
 
 ## Tools
 
 - `obsidian.health`: checks CLI availability and setup guidance.
+- `obsidian.vaults`: lists known Obsidian vaults.
+- `obsidian.vault_info`: resolves a vault name or the recent vault to a local path.
 - `obsidian.search`: searches notes via Obsidian CLI.
 - `obsidian.read`: reads a note by path or file.
 - `obsidian.create`: creates notes with validated input.
@@ -62,7 +64,9 @@ If the user wants a new vault, create or open it in Obsidian first, then configu
 
 ## Guardrails
 
-`obsidian.cli_run` blocks command names such as `delete`, `remove`, `trash`, `wipe`, and `reset`. This denylist is a safety rail, not a complete security boundary.
+`obsidian.cli_run` treats command names such as `delete`, `remove`, `trash`, `wipe`, and `reset` as destructive. The first call returns `OBSIDIAN_COMMAND_CONFIRMATION_REQUIRED` with a `confirmationId` instead of executing. After explicit user approval, retry exactly the same argv array with `confirmDestructive: true` and that `confirmationId`.
+
+The denylist is a safety rail, not a complete security boundary.
 
 ## LLM Knowledge Base Scaffold
 
@@ -80,6 +84,8 @@ KB Dashboard.base
 ```
 
 The scaffold follows the Karpathy pattern: raw sources are immutable, generated wiki pages are maintained by the LLM, and index/log/schema files guide future ingest, query, and lint workflows.
+
+`obsidian.kb_create` resolves the target vault path and writes the scaffold through validated filesystem paths. This avoids Obsidian CLI note-name interpretation for directories and `.base` files, and blocks any scaffold path that would escape the vault directory.
 
 ## Development
 

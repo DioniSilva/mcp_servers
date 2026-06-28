@@ -16,6 +16,10 @@ export interface MissingCliPayload {
 export interface VaultDecisionRequiredPayload {
   code: "OBSIDIAN_VAULT_DECISION_REQUIRED";
   message: string;
+  knownVaults?: Array<{
+    name: string;
+    path: string;
+  }>;
   choices: readonly [
     {
       id: "use_recent_vault";
@@ -48,11 +52,14 @@ export function missingCliPayload(): MissingCliPayload {
   };
 }
 
-export function vaultDecisionRequiredPayload(): VaultDecisionRequiredPayload {
+export function vaultDecisionRequiredPayload(
+  knownVaults?: Array<{ name: string; path: string }>
+): VaultDecisionRequiredPayload {
   return {
     code: "OBSIDIAN_VAULT_DECISION_REQUIRED",
     message:
       "OBSIDIAN_VAULT is not set. The agent must ask the user whether to use the most recently focused Obsidian vault or create/select a vault before running operational tools.",
+    knownVaults,
     choices: [
       {
         id: "use_recent_vault",
