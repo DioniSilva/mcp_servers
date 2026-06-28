@@ -37,7 +37,17 @@ Configure an MCP client with:
 }
 ```
 
-`OBSIDIAN_VAULT` is optional. When set, the server prepends `vault=<name>` to Obsidian CLI calls. When omitted, the CLI targets the most recently focused vault.
+`OBSIDIAN_VAULT` is optional but operational tools will not silently use the most recently focused vault. If `OBSIDIAN_VAULT` is not set, tools return `OBSIDIAN_VAULT_DECISION_REQUIRED` and the agent must explicitly ask whether the user wants to use the most recently focused vault or create/select a vault first.
+
+After explicit user confirmation, the agent can retry the same operation with:
+
+```json
+{
+  "useRecentVault": true
+}
+```
+
+If the user wants a new vault, create or open it in Obsidian first, then configure `OBSIDIAN_VAULT` in the MCP client environment.
 
 ## Tools
 

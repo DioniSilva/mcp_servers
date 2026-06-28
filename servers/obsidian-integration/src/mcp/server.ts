@@ -105,7 +105,7 @@ const tools = [
 
 export function createMcpServer(): Server {
   const server = new Server(
-    { name: "obsidian-integration-mcp-server", version: "0.1.0" },
+    { name: "obsidian-integration-mcp-server", version: "0.2.0" },
     { capabilities: { tools: {}, resources: {} } }
   );
 

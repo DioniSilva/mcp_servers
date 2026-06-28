@@ -13,6 +13,23 @@ export interface MissingCliPayload {
   guidance: readonly string[];
 }
 
+export interface VaultDecisionRequiredPayload {
+  code: "OBSIDIAN_VAULT_DECISION_REQUIRED";
+  message: string;
+  choices: readonly [
+    {
+      id: "use_recent_vault";
+      description: string;
+      nextStep: string;
+    },
+    {
+      id: "create_or_select_vault";
+      description: string;
+      nextStep: string;
+    }
+  ];
+}
+
 export interface ObsidianCommandResult {
   ok: boolean;
   command: string;
@@ -28,6 +45,30 @@ export function missingCliPayload(): MissingCliPayload {
     message:
       "The obsidian CLI was not found. This MCP server requires the Obsidian CLI and a running Obsidian instance for operational tools.",
     guidance: missingCliGuidance
+  };
+}
+
+export function vaultDecisionRequiredPayload(): VaultDecisionRequiredPayload {
+  return {
+    code: "OBSIDIAN_VAULT_DECISION_REQUIRED",
+    message:
+      "OBSIDIAN_VAULT is not set. The agent must ask the user whether to use the most recently focused Obsidian vault or create/select a vault before running operational tools.",
+    choices: [
+      {
+        id: "use_recent_vault",
+        description:
+          "Use the most recently focused Obsidian vault for this operation.",
+        nextStep:
+          "Ask for explicit confirmation, then retry the same tool call with useRecentVault=true."
+      },
+      {
+        id: "create_or_select_vault",
+        description:
+          "Create a new Obsidian vault or select an existing vault before using this MCP server.",
+        nextStep:
+          "Ask the user to create/open the vault in Obsidian, then configure OBSIDIAN_VAULT in the MCP client environment."
+      }
+    ]
   };
 }
 
@@ -67,10 +108,22 @@ export async function isObsidianCliAvailable(
 
 export async function runObsidian(
   args: string[],
-  options: { env?: NodeJS.ProcessEnv; timeoutMs?: number } = {}
-): Promise<ObsidianCommandResult | MissingCliPayload> {
+  options: {
+    env?: NodeJS.ProcessEnv;
+    timeoutMs?: number;
+    useRecentVault?: boolean;
+  } = {}
+): Promise<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload> {
+  const env = options.env ?? process.env;
+  const hasVaultTarget =
+    Boolean(env.OBSIDIAN_VAULT) || args.some((arg) => arg.startsWith("vault="));
+
+  if (!hasVaultTarget && !options.useRecentVault) {
+    return vaultDecisionRequiredPayload();
+  }
+
   try {
-    return await runObsidianRaw(withVaultArg(args, options.env), options);
+    return await runObsidianRaw(withVaultArg(args, env), options);
   } catch (error) {
     if (isMissingCliError(error)) {
       return missingCliPayload();

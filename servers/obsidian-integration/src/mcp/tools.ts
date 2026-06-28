@@ -5,20 +5,27 @@ import {
   missingCliPayload,
   runObsidian,
   type MissingCliPayload,
-  type ObsidianCommandResult
+  type ObsidianCommandResult,
+  type VaultDecisionRequiredPayload,
+  vaultDecisionRequiredPayload
 } from "../obsidian/cli.js";
 import { createKbScaffold } from "../obsidian/kb.js";
+
+const vaultSelectionSchema = z.object({
+  useRecentVault: z.boolean().default(false)
+});
 
 export const searchInputSchema = z.object({
   query: z.string().min(1),
   limit: z.number().int().positive().max(100).optional()
-});
+}).merge(vaultSelectionSchema);
 
 export const readInputSchema = z
   .object({
     path: z.string().min(1).optional(),
     file: z.string().min(1).optional()
   })
+  .merge(vaultSelectionSchema)
   .refine((input) => input.path || input.file, {
     message: "Either path or file is required."
   });
@@ -28,7 +35,7 @@ export const createInputSchema = z.object({
   content: z.string().default(""),
   silent: z.boolean().default(true),
   overwrite: z.boolean().default(false)
-});
+}).merge(vaultSelectionSchema);
 
 export const appendInputSchema = z
   .object({
@@ -36,24 +43,25 @@ export const appendInputSchema = z
     file: z.string().min(1).optional(),
     content: z.string().min(1)
   })
+  .merge(vaultSelectionSchema)
   .refine((input) => input.path || input.file, {
     message: "Either path or file is required."
   });
 
 export const cliRunInputSchema = z.object({
   args: z.array(z.string().min(1)).min(1)
-});
+}).merge(vaultSelectionSchema);
 
 export const kbCreateInputSchema = z.object({
   name: z.string().min(1),
   rootPath: z.string().min(1).optional(),
   description: z.string().optional(),
   includeBases: z.boolean().default(true)
-});
+}).merge(vaultSelectionSchema);
 
 export const kbStatusInputSchema = z.object({
   rootPath: z.string().min(1)
-});
+}).merge(vaultSelectionSchema);
 
 export async function executeObsidianTool(
   name: string,
@@ -63,17 +71,29 @@ export async function executeObsidianTool(
     case "obsidian.health":
       return obsidianHealth();
     case "obsidian.search":
-      return runOperationalTool(buildSearchArgs(searchInputSchema.parse(rawInput)));
+      return runOperationalToolFromInput(
+        buildSearchArgs(searchInputSchema.parse(rawInput)),
+        searchInputSchema.parse(rawInput)
+      );
     case "obsidian.read":
-      return runOperationalTool(buildReadArgs(readInputSchema.parse(rawInput)));
+      return runOperationalToolFromInput(
+        buildReadArgs(readInputSchema.parse(rawInput)),
+        readInputSchema.parse(rawInput)
+      );
     case "obsidian.create":
-      return runOperationalTool(buildCreateArgs(createInputSchema.parse(rawInput)));
+      return runOperationalToolFromInput(
+        buildCreateArgs(createInputSchema.parse(rawInput)),
+        createInputSchema.parse(rawInput)
+      );
     case "obsidian.append":
-      return runOperationalTool(buildAppendArgs(appendInputSchema.parse(rawInput)));
+      return runOperationalToolFromInput(
+        buildAppendArgs(appendInputSchema.parse(rawInput)),
+        appendInputSchema.parse(rawInput)
+      );
     case "obsidian.cli_run": {
       const input = cliRunInputSchema.parse(rawInput);
       assertAllowedObsidianArgs(input.args);
-      return runOperationalTool(input.args);
+      return runOperationalToolFromInput(input.args, input);
     }
     case "obsidian.kb_create":
       return createKnowledgeBase(kbCreateInputSchema.parse(rawInput));
@@ -125,27 +145,40 @@ export function buildAppendArgs(input: z.infer<typeof appendInputSchema>): strin
 async function obsidianHealth(): Promise<{
   cliAvailable: boolean;
   vaultTarget: string | null;
+  requiresVaultDecision: boolean;
+  vaultDecision?: VaultDecisionRequiredPayload;
   guidance: readonly string[];
 }> {
+  const vaultTarget = process.env.OBSIDIAN_VAULT ?? null;
   return {
     cliAvailable: await isObsidianCliAvailable(),
-    vaultTarget: process.env.OBSIDIAN_VAULT ?? null,
+    vaultTarget,
+    requiresVaultDecision: !vaultTarget,
+    vaultDecision: vaultTarget ? undefined : vaultDecisionRequiredPayload(),
     guidance: missingCliPayload().guidance
   };
 }
 
 async function runOperationalTool(
-  args: string[]
-): Promise<ObsidianCommandResult | MissingCliPayload> {
+  args: string[],
+  options: { useRecentVault?: boolean } = {}
+): Promise<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload> {
   assertAllowedObsidianArgs(args);
-  return runObsidian(args);
+  return runObsidian(args, { useRecentVault: options.useRecentVault });
+}
+
+async function runOperationalToolFromInput(
+  args: string[],
+  input: { useRecentVault?: boolean }
+): Promise<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload> {
+  return runOperationalTool(args, { useRecentVault: input.useRecentVault });
 }
 
 async function createKnowledgeBase(
   input: z.infer<typeof kbCreateInputSchema>
 ): Promise<{
   rootPath: string;
-  created: Array<ObsidianCommandResult | MissingCliPayload>;
+  created: Array<ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload>;
 }> {
   const scaffold = createKbScaffold(input);
   const created = [];
@@ -157,10 +190,10 @@ async function createKnowledgeBase(
       `content=${file.content}`,
       "silent",
       "overwrite"
-    ]);
+    ], { useRecentVault: input.useRecentVault });
     created.push(result);
 
-    if ("code" in result && result.code === "OBSIDIAN_CLI_NOT_FOUND") {
+    if ("code" in result) {
       break;
     }
   }
@@ -170,15 +203,21 @@ async function createKnowledgeBase(
 
 async function kbStatus(input: z.infer<typeof kbStatusInputSchema>): Promise<{
   rootPath: string;
-  index: ObsidianCommandResult | MissingCliPayload;
-  log: ObsidianCommandResult | MissingCliPayload;
-  schema: ObsidianCommandResult | MissingCliPayload;
+  index: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
+  log: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
+  schema: ObsidianCommandResult | MissingCliPayload | VaultDecisionRequiredPayload;
 }> {
   const root = input.rootPath.replace(/^\/+|\/+$/g, "");
   const [index, log, schema] = await Promise.all([
-    runOperationalTool(["read", `path=${root}/wiki/index.md`]),
-    runOperationalTool(["read", `path=${root}/wiki/log.md`]),
-    runOperationalTool(["read", `path=${root}/schema.md`])
+    runOperationalTool(["read", `path=${root}/wiki/index.md`], {
+      useRecentVault: input.useRecentVault
+    }),
+    runOperationalTool(["read", `path=${root}/wiki/log.md`], {
+      useRecentVault: input.useRecentVault
+    }),
+    runOperationalTool(["read", `path=${root}/schema.md`], {
+      useRecentVault: input.useRecentVault
+    })
   ]);
 
   return { rootPath: root, index, log, schema };

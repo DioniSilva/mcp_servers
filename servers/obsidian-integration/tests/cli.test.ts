@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { assertAllowedObsidianArgs } from "../src/obsidian/guardrails.js";
 import { createKbScaffold } from "../src/obsidian/kb.js";
-import { missingCliPayload, withVaultArg } from "../src/obsidian/cli.js";
+import {
+  missingCliPayload,
+  runObsidian,
+  vaultDecisionRequiredPayload,
+  withVaultArg
+} from "../src/obsidian/cli.js";
 import {
   buildAppendArgs,
   buildCreateArgs,
@@ -27,16 +32,25 @@ describe("Obsidian CLI helpers", () => {
   });
 
   it("builds safe argv arrays", () => {
-    expect(buildSearchArgs({ query: "llm", limit: 5 })).toEqual([
+    expect(buildSearchArgs({ query: "llm", limit: 5, useRecentVault: false })).toEqual([
       "search",
       "query=llm",
       "limit=5"
     ]);
-    expect(buildReadArgs({ path: "A/B.md" })).toEqual(["read", "path=A/B.md"]);
+    expect(buildReadArgs({ path: "A/B.md", useRecentVault: false })).toEqual([
+      "read",
+      "path=A/B.md"
+    ]);
     expect(
-      buildCreateArgs({ name: "A", content: "# A", silent: true, overwrite: false })
+      buildCreateArgs({
+        name: "A",
+        content: "# A",
+        silent: true,
+        overwrite: false,
+        useRecentVault: false
+      })
     ).toEqual(["create", "name=A", "content=# A", "silent"]);
-    expect(buildAppendArgs({ file: "A", content: "More" })).toEqual([
+    expect(buildAppendArgs({ file: "A", content: "More", useRecentVault: false })).toEqual([
       "append",
       "file=A",
       "content=More"
@@ -56,6 +70,27 @@ describe("Obsidian CLI helpers", () => {
       guidance: expect.arrayContaining([
         "Confirm `obsidian help` works in a terminal."
       ])
+    });
+  });
+
+  it("returns vault decision guidance shape", () => {
+    expect(vaultDecisionRequiredPayload()).toMatchObject({
+      code: "OBSIDIAN_VAULT_DECISION_REQUIRED",
+      choices: expect.arrayContaining([
+        expect.objectContaining({ id: "use_recent_vault" }),
+        expect.objectContaining({ id: "create_or_select_vault" })
+      ])
+    });
+  });
+
+  it("requires an explicit vault decision before using the recent vault", async () => {
+    const result = await runObsidian(["search", "query=test"], {
+      env: {},
+      useRecentVault: false
+    });
+
+    expect(result).toMatchObject({
+      code: "OBSIDIAN_VAULT_DECISION_REQUIRED"
     });
   });
 });
@@ -94,6 +129,7 @@ describe("MCP tool contracts", () => {
     const health = await executeObsidianTool("obsidian.health", {});
     expect(health).toMatchObject({
       cliAvailable: expect.any(Boolean),
+      requiresVaultDecision: expect.any(Boolean),
       guidance: expect.arrayContaining([
         "Open Obsidian before using operational tools."
       ])

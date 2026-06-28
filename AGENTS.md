@@ -52,6 +52,7 @@ For `servers/obsidian-integration`:
 
 - The server operates through the `obsidian` CLI and requires Obsidian to be open.
 - `OBSIDIAN_VAULT` is optional and should map to `vault=<name>` CLI arguments.
+- If `OBSIDIAN_VAULT` is missing, operational tools must return `OBSIDIAN_VAULT_DECISION_REQUIRED` and the agent must ask whether to use the most recently focused vault or create/select a vault before retrying.
 - `obsidian.health` must remain available even when the CLI is missing.
 - Full CLI passthrough must use argv arrays with `spawn`, never shell execution.
 - Destructive command names must remain blocked by the minimal denylist.

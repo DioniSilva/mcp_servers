@@ -53,7 +53,7 @@ describe("MCP catalog tool contract", () => {
 
     expect(info).toEqual({
       packageName: "shared-catalog-mcp-server",
-      currentVersion: "0.3.0",
+      currentVersion: "0.4.0",
       tagPrefix: "shared-catalog-v",
       releaseTagPattern: "shared-catalog-vX.Y.Z",
       installerUrl:

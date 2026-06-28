@@ -32,6 +32,8 @@ MCP client command:
 }
 ```
 
-`OBSIDIAN_VAULT` is optional. If it is not set, the Obsidian CLI targets the most recently focused vault.
+`OBSIDIAN_VAULT` is optional. When set, it targets a specific vault.
+
+Operational tools do not use the most recent vault silently. If `OBSIDIAN_VAULT` is not set, the server returns `OBSIDIAN_VAULT_DECISION_REQUIRED`; the agent must ask whether to use the most recently focused vault or create/select a vault before retrying with `useRecentVault=true`.
 
 Before using operational tools, run `obsidian.health`. If it reports `OBSIDIAN_CLI_NOT_FOUND`, install or enable the Obsidian CLI integration, confirm `obsidian help` works in a terminal, and open Obsidian.
