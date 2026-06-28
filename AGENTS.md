@@ -46,9 +46,10 @@ For `servers/shared-catalog`:
 
 ## Release
 
-- Distribution uses `npm pack` plus a GitHub Release per server.
-- Run `npm run release:check -w servers/<name>` before packaging.
-- Run `npm run release:pack -w servers/<name>` to generate the `.tgz`.
+- Releases are automated by GitHub Actions on pushes to `main`.
+- Use server-prefixed tags, for example `shared-catalog-v0.1.0`.
+- Run `npm run release:check -w servers/<name>` before changing release workflows.
+- Use `npm run release:pack -w servers/<name>` only for local packaging checks.
 - Do not commit `.tgz`, `dist/`, `node_modules/`, or local cache files.
 
 ## Best Practices

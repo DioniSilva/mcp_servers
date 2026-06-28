@@ -57,30 +57,31 @@ After global installation, configure MCP clients to use the binary:
 }
 ```
 
-## Local Release
+## Release
 
-Before creating a release:
+Releases are automated by GitHub Actions on pushes to the repository `main` branch. The workflow validates the package, builds the npm tarball, and creates a GitHub Release if `shared-catalog-vX.Y.Z` does not already exist.
+
+Before changing release behavior, run:
 
 ```bash
 npm run release:check
 ```
 
-Generate the package:
+To generate the package locally:
 
 ```bash
 npm run release:pack
 ```
 
-The command creates a file such as `shared-catalog-mcp-server-0.1.0.tgz`. Attach that file to a GitHub Release with the matching tag, for example `v0.1.0`.
+The command creates a file such as `shared-catalog-mcp-server-0.1.0.tgz`. This file is a local artifact and should not be committed.
 
-Suggested checklist:
+Release checklist:
 
 1. Update `version` in `package.json`.
 2. Run `npm install` to synchronize `package-lock.json` when the version changes.
 3. Run `npm run release:check`.
-4. Run `npm run release:pack`.
-5. Create the Git tag `vX.Y.Z`.
-6. Create the GitHub Release and attach the `.tgz`.
+4. Push or merge the change to `main`.
+5. Confirm the GitHub Actions workflow creates `shared-catalog-vX.Y.Z`.
 
 ## MCP Capabilities
 

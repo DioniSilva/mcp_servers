@@ -1,0 +1,84 @@
+name: Release Shared Catalog MCP Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "servers/shared-catalog/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/release-shared-catalog.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-shared-catalog-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and release shared-catalog
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate package
+        run: npm run release:check -w servers/shared-catalog
+
+      - name: Compute release metadata
+        id: meta
+        run: |
+          VERSION="$(node -p "require('./servers/shared-catalog/package.json').version")"
+          PACKAGE_NAME="$(node -p "require('./servers/shared-catalog/package.json').name")"
+          TAG="shared-catalog-v${VERSION}"
+          TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether release already exists
+        id: existing_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: npm run release:pack -w servers/shared-catalog
+
+      - name: Verify release tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: test -f "servers/shared-catalog/${{ steps.meta.outputs.tarball }}"
+
+      - name: Create GitHub Release
+        if: steps.existing_release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            "servers/shared-catalog/${{ steps.meta.outputs.tarball }}#${{ steps.meta.outputs.tarball }}" \
+            --target "$GITHUB_SHA" \
+            --title "Shared Catalog MCP Server v${{ steps.meta.outputs.version }}" \
+            --notes "Automated release for shared-catalog MCP server v${{ steps.meta.outputs.version }}."

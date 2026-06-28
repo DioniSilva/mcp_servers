@@ -44,16 +44,22 @@ npm run release:pack -w servers/shared-catalog
 
 ## Releases
 
-The recommended flow is to package each server independently with `npm pack` and attach the `.tgz` to a GitHub Release.
+Releases are automated from the `main` branch with GitHub Actions. When changes to a server are merged or pushed to `main`, the matching release workflow validates the workspace, creates the npm tarball, and publishes a GitHub Release if one does not already exist for that server version.
 
-Example for the `shared-catalog` server:
+The `shared-catalog` server uses tags in this format:
+
+```text
+shared-catalog-vX.Y.Z
+```
+
+Manual local validation is still available:
 
 ```bash
 npm run release:check -w servers/shared-catalog
 npm run release:pack -w servers/shared-catalog
 ```
 
-The generated `.tgz` file is a local release artifact and should not be committed.
+Generated `.tgz` files are local release artifacts and should not be committed.
 
 ## Servers
 
