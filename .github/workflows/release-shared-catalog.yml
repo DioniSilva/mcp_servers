@@ -48,10 +48,12 @@ jobs:
           PACKAGE_NAME="$(node -p "require('./servers/shared-catalog/package.json').name")"
           TAG="shared-catalog-v${VERSION}"
           TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
+          LATEST_TARBALL="${PACKAGE_NAME}-latest.tgz"
 
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+          echo "latest_tarball=${LATEST_TARBALL}" >> "$GITHUB_OUTPUT"
 
       - name: Check whether release already exists
         id: existing_release
@@ -72,6 +74,13 @@ jobs:
         if: steps.existing_release.outputs.exists == 'false'
         run: test -f "servers/shared-catalog/${{ steps.meta.outputs.tarball }}"
 
+      - name: Copy stable latest tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: |
+          cp \
+            "servers/shared-catalog/${{ steps.meta.outputs.tarball }}" \
+            "servers/shared-catalog/${{ steps.meta.outputs.latest_tarball }}"
+
       - name: Create GitHub Release
         if: steps.existing_release.outputs.exists == 'false'
         env:
@@ -79,6 +88,7 @@ jobs:
         run: |
           gh release create "${{ steps.meta.outputs.tag }}" \
             "servers/shared-catalog/${{ steps.meta.outputs.tarball }}#${{ steps.meta.outputs.tarball }}" \
+            "servers/shared-catalog/${{ steps.meta.outputs.latest_tarball }}#${{ steps.meta.outputs.latest_tarball }}" \
             --target "$GITHUB_SHA" \
             --title "Shared Catalog MCP Server v${{ steps.meta.outputs.version }}" \
             --notes "Automated release for shared-catalog MCP server v${{ steps.meta.outputs.version }}."

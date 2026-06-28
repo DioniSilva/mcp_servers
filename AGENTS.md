@@ -6,6 +6,7 @@ Minimal guidance for AI agents working in this repository.
 
 - The `mcp_servers` root is an npm workspaces monorepo, not an MCP server.
 - Each publishable MCP server lives in `servers/<server-name>/`.
+- Each server should have a matching installer or updater script in `scripts/install-latest-<server-name>.sh`.
 - The current server is `servers/shared-catalog`.
 - Keep a single `package-lock.json` at the repository root.
 
@@ -48,6 +49,7 @@ For `servers/shared-catalog`:
 
 - Releases are automated by GitHub Actions on pushes to `main`.
 - Use server-prefixed tags, for example `shared-catalog-v0.1.0`.
+- Installer scripts must resolve the newest release for their own server tag prefix instead of relying on GitHub `releases/latest`, because this is a monorepo.
 - Run `npm run release:check -w servers/<name>` before changing release workflows.
 - Use `npm run release:pack -w servers/<name>` only for local packaging checks.
 - Do not commit `.tgz`, `dist/`, `node_modules/`, or local cache files.

@@ -61,6 +61,35 @@ npm run release:pack -w servers/shared-catalog
 
 Generated `.tgz` files are local release artifacts and should not be committed.
 
+## Installing a Server from a GitHub Release
+
+Each server should provide an installer script that resolves the latest release for that server-specific tag prefix. This avoids relying on GitHub `releases/latest`, which is repository-wide and can point to another server in this monorepo.
+
+Install or update the latest `shared-catalog` release:
+
+```bash
+scripts/install-latest-shared-catalog.sh
+```
+
+You can also install a specific released asset directly:
+
+```bash
+npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.1.0/shared-catalog-mcp-server-0.1.0.tgz
+```
+
+Then use the installed binary in an MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "shared-catalog": {
+      "command": "shared-catalog-mcp",
+      "args": []
+    }
+  }
+}
+```
+
 ## Servers
 
 - [Shared Catalog MCP Server](./servers/shared-catalog/README.md): read-only MCP catalog for sharing skills, tool definitions, prompts, and resources.
