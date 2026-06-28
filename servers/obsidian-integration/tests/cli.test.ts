@@ -232,12 +232,17 @@ describe("MCP tool contracts", () => {
     const health = await executeObsidianTool("obsidian.health", {});
     expect(health).toMatchObject({
       cliAvailable: expect.any(Boolean),
-      knownVaults: expect.anything(),
       requiresVaultDecision: expect.any(Boolean),
       guidance: expect.arrayContaining([
         "Open Obsidian before using operational tools."
       ])
     });
+    expect(
+      health &&
+        typeof health === "object" &&
+        "knownVaults" in health &&
+        (health.knownVaults === null || Array.isArray(health.knownVaults))
+    ).toBe(true);
   });
 
   it("returns a vault decision with known vaults when no target is selected", async () => {
