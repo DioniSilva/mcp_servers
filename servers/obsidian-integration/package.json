@@ -1,15 +1,15 @@
 {
-  "name": "shared-catalog-mcp-server",
-  "version": "0.3.0",
-  "description": "Local MCP server for sharing skills, tool definitions, prompts, and resources across coding tools.",
+  "name": "obsidian-integration-mcp-server",
+  "version": "0.1.0",
+  "description": "Operational MCP server for integrating AI coding agents with Obsidian vaults.",
   "type": "module",
   "license": "MIT",
   "bin": {
-    "shared-catalog-mcp": "./dist/index.js"
+    "obsidian-integration-mcp": "./dist/index.js"
   },
   "files": [
     "dist",
-    "catalog",
+    "resources",
     "README.md",
     "LICENSE"
   ],
@@ -25,9 +25,8 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.13.2",
-    "yaml": "^2.8.0",
-    "zod-to-json-schema": "^3.24.6",
-    "zod": "^3.25.67"
+    "zod": "^3.25.67",
+    "zod-to-json-schema": "^3.24.6"
   },
   "devDependencies": {
     "@types/node": "^24.0.4",

@@ -14,6 +14,11 @@ mcp_servers/
       src/
       tests/
       catalog/
+    obsidian-integration/
+      package.json
+      src/
+      tests/
+      resources/
 ```
 
 Each subdirectory in `servers/` is an independently publishable MCP server.
@@ -40,6 +45,7 @@ Run commands for a specific server:
 npm run dev -w servers/shared-catalog
 npm run release:check -w servers/shared-catalog
 npm run release:pack -w servers/shared-catalog
+npm run dev -w servers/obsidian-integration
 ```
 
 ## Releases
@@ -61,6 +67,19 @@ npm run release:pack -w servers/shared-catalog
 
 Generated `.tgz` files are local release artifacts and should not be committed.
 
+## Server Roles
+
+- `shared-catalog` is read-only discovery for skills, tool definitions, prompts, and resources.
+- `obsidian-integration` is operational and can read or modify an Obsidian vault through the `obsidian` CLI.
+
+Before using `obsidian-integration`, confirm:
+
+```bash
+obsidian help
+```
+
+Obsidian must be open. Optionally set `OBSIDIAN_VAULT` in the MCP client environment to target a specific vault.
+
 ## Installing a Server from a GitHub Release
 
 Each server should provide an installer script that resolves the latest release for that server-specific tag prefix. This avoids relying on GitHub `releases/latest`, which is repository-wide and can point to another server in this monorepo.
@@ -80,7 +99,7 @@ curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts
 You can also install a specific released asset directly:
 
 ```bash
-npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.2.0/shared-catalog-mcp-server-0.2.0.tgz
+npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.3.0/shared-catalog-mcp-server-0.3.0.tgz
 ```
 
 Then use the installed binary in an MCP client configuration:
@@ -98,6 +117,29 @@ Then use the installed binary in an MCP client configuration:
 
 The `shared-catalog` MCP server also exposes `catalog.update_info`, a read-only tool that returns the current server version, tag pattern, public installer URL, and recommended install/update commands.
 
+Install or update the Obsidian integration server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts/install-latest-obsidian-integration.sh | bash
+```
+
+Then configure:
+
+```json
+{
+  "mcpServers": {
+    "obsidian-integration": {
+      "command": "obsidian-integration-mcp",
+      "args": [],
+      "env": {
+        "OBSIDIAN_VAULT": "Your Vault Name"
+      }
+    }
+  }
+}
+```
+
 ## Servers
 
 - [Shared Catalog MCP Server](./servers/shared-catalog/README.md): read-only MCP catalog for sharing skills, tool definitions, prompts, and resources.
+- [Obsidian Integration MCP Server](./servers/obsidian-integration/README.md): operational MCP server for Obsidian vaults and Karpathy-style knowledge bases.

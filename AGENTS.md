@@ -7,7 +7,7 @@ Minimal guidance for AI agents working in this repository.
 - The `mcp_servers` root is an npm workspaces monorepo, not an MCP server.
 - Each publishable MCP server lives in `servers/<server-name>/`.
 - Each server should have a matching installer or updater script in `scripts/install-latest-<server-name>.sh`.
-- The current server is `servers/shared-catalog`.
+- Current servers are `servers/shared-catalog` and `servers/obsidian-integration`.
 - Keep a single `package-lock.json` at the repository root.
 
 ## Commands
@@ -35,6 +35,7 @@ npm run release:pack -w servers/shared-catalog
 - Each server should have its own `package.json`, `README.md`, `src/`, `tests/`, and, when applicable, `catalog/`.
 - Keep `stdio` as the default transport for local MCP servers unless explicitly decided otherwise.
 - Catalog servers should remain read-only and must not execute local commands.
+- Operational servers such as `obsidian-integration` may modify local state and must document prerequisites, guardrails, and setup diagnostics.
 
 ## Catalog
 
@@ -44,6 +45,17 @@ For `servers/shared-catalog`:
 - Required metadata: `id`, `name`, `description`, `tags`, `version`, `kind`, `contentPath`.
 - `contentPath` must point to the real path inside the package.
 - Cataloged tools describe reusable capabilities; they must not execute actions.
+
+## Obsidian Integration
+
+For `servers/obsidian-integration`:
+
+- The server operates through the `obsidian` CLI and requires Obsidian to be open.
+- `OBSIDIAN_VAULT` is optional and should map to `vault=<name>` CLI arguments.
+- `obsidian.health` must remain available even when the CLI is missing.
+- Full CLI passthrough must use argv arrays with `spawn`, never shell execution.
+- Destructive command names must remain blocked by the minimal denylist.
+- KB scaffolds follow the Karpathy pattern: immutable raw sources, LLM-owned wiki pages, index, log, schema, outputs, and assets.
 
 ## Release
 

@@ -102,7 +102,7 @@ function getUpdateInfo(): {
 
   return {
     packageName: "shared-catalog-mcp-server",
-    currentVersion: "0.2.0",
+    currentVersion: "0.3.0",
     tagPrefix: "shared-catalog-v",
     releaseTagPattern: "shared-catalog-vX.Y.Z",
     installerUrl,

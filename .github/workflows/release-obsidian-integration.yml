@@ -1,0 +1,94 @@
+name: Release Obsidian Integration MCP Server
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "servers/obsidian-integration/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/release-obsidian-integration.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-obsidian-integration-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Package and release obsidian-integration
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate package
+        run: npm run release:check -w servers/obsidian-integration
+
+      - name: Compute release metadata
+        id: meta
+        run: |
+          VERSION="$(node -p "require('./servers/obsidian-integration/package.json').version")"
+          PACKAGE_NAME="$(node -p "require('./servers/obsidian-integration/package.json').name")"
+          TAG="obsidian-integration-v${VERSION}"
+          TARBALL="${PACKAGE_NAME}-${VERSION}.tgz"
+          LATEST_TARBALL="${PACKAGE_NAME}-latest.tgz"
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+          echo "latest_tarball=${LATEST_TARBALL}" >> "$GITHUB_OUTPUT"
+
+      - name: Check whether release already exists
+        id: existing_release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ steps.meta.outputs.tag }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build release tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: npm run release:pack -w servers/obsidian-integration
+
+      - name: Verify release tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: test -f "servers/obsidian-integration/${{ steps.meta.outputs.tarball }}"
+
+      - name: Copy stable latest tarball
+        if: steps.existing_release.outputs.exists == 'false'
+        run: |
+          cp \
+            "servers/obsidian-integration/${{ steps.meta.outputs.tarball }}" \
+            "servers/obsidian-integration/${{ steps.meta.outputs.latest_tarball }}"
+
+      - name: Create GitHub Release
+        if: steps.existing_release.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ steps.meta.outputs.tag }}" \
+            "servers/obsidian-integration/${{ steps.meta.outputs.tarball }}#${{ steps.meta.outputs.tarball }}" \
+            "servers/obsidian-integration/${{ steps.meta.outputs.latest_tarball }}#${{ steps.meta.outputs.latest_tarball }}" \
+            --target "$GITHUB_SHA" \
+            --title "Obsidian Integration MCP Server v${{ steps.meta.outputs.version }}" \
+            --notes "Automated release for obsidian-integration MCP server v${{ steps.meta.outputs.version }}."

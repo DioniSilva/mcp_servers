@@ -56,7 +56,7 @@ export function createMcpServer(index: CatalogIndex): Server {
   const server = new Server(
     {
       name: "shared-catalog-mcp-server",
-      version: "0.2.0"
+      version: "0.3.0"
     },
     {
       capabilities: {

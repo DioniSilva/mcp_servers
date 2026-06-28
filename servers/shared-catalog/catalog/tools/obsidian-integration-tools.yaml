@@ -1,0 +1,23 @@
+id: obsidian-integration-tools
+name: Obsidian Integration Tools
+description: Operational Obsidian MCP tools exposed by obsidian-integration-mcp.
+tags:
+  - obsidian
+  - mcp
+  - tools
+version: 0.1.0
+kind: tool
+contentPath: catalog/tools/obsidian-integration-tools.yaml
+clientHints:
+  execution: external-mcp-server
+  command: obsidian-integration-mcp
+tools:
+  - obsidian.health
+  - obsidian.search
+  - obsidian.read
+  - obsidian.create
+  - obsidian.append
+  - obsidian.cli_run
+  - obsidian.kb_create
+  - obsidian.kb_status
+notes: These tools are provided by the separate Obsidian Integration MCP Server. Unlike shared-catalog, that server can modify an Obsidian vault.

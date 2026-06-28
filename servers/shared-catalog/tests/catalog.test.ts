@@ -49,13 +49,19 @@ describe("catalog loading and lookup", () => {
       "code-review-checklist",
       "implementation-plan",
       "mcp-client-configs",
+      "obsidian-integration-install",
+      "obsidian-integration-tools",
+      "obsidian-kb-workflow",
       "repo-search"
     ]);
   });
 
   it("lists items by kind and tag", async () => {
     const index = await loadCatalog(rootDir);
-    expect(listCatalog(index, { kind: "skill" })).toHaveLength(1);
+    expect(listCatalog(index, { kind: "skill" }).map((item) => item.id)).toEqual([
+      "code-review-checklist",
+      "obsidian-kb-workflow"
+    ]);
     expect(listCatalog(index, { tag: "coding" }).map((item) => item.id)).toEqual([
       "code-review-checklist",
       "implementation-plan",

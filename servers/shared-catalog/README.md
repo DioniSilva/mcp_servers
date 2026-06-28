@@ -46,14 +46,14 @@ curl -fsSL https://raw.githubusercontent.com/DioniSilva/mcp_servers/main/scripts
 Install from a `.tgz` file downloaded from the release:
 
 ```bash
-npm install -g ./shared-catalog-mcp-server-0.2.0.tgz
+npm install -g ./shared-catalog-mcp-server-0.3.0.tgz
 shared-catalog-mcp
 ```
 
 Install directly from the release asset URL:
 
 ```bash
-npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.2.0/shared-catalog-mcp-server-0.2.0.tgz
+npm install -g https://github.com/DioniSilva/mcp_servers/releases/download/shared-catalog-v0.3.0/shared-catalog-mcp-server-0.3.0.tgz
 ```
 
 After global installation, configure MCP clients to use the binary:
@@ -85,7 +85,7 @@ To generate the package locally:
 npm run release:pack
 ```
 
-The command creates a file such as `shared-catalog-mcp-server-0.2.0.tgz`. This file is a local artifact and should not be committed.
+The command creates a file such as `shared-catalog-mcp-server-0.3.0.tgz`. This file is a local artifact and should not be committed.
 
 Release checklist:
 
@@ -106,6 +106,14 @@ The server exposes five safe tools:
 - `catalog.update_info`: returns read-only install and update information for this MCP server.
 
 It also exposes resources with the `catalog://{kind}/{id}` URI format and versioned catalog prompts as native MCP prompts.
+
+The catalog includes discovery entries for the separate Obsidian Integration MCP Server:
+
+- `obsidian-integration-install`
+- `obsidian-integration-tools`
+- `obsidian-kb-workflow`
+
+Use those entries to install `obsidian-integration-mcp`, run `obsidian.health`, and create Karpathy-style Obsidian knowledge bases.
 
 ## Catalog Structure
 
