@@ -47,6 +47,7 @@ describe("catalog loading and lookup", () => {
     const index = await loadCatalog(rootDir);
     expect(index.items.map((item) => item.id).sort()).toEqual([
       "code-review-checklist",
+      "handle-mend-vulnerability",
       "implementation-plan",
       "mcp-client-configs",
       "obsidian-integration-install",
@@ -60,6 +61,7 @@ describe("catalog loading and lookup", () => {
     const index = await loadCatalog(rootDir);
     expect(listCatalog(index, { kind: "skill" }).map((item) => item.id)).toEqual([
       "code-review-checklist",
+      "handle-mend-vulnerability",
       "obsidian-kb-workflow"
     ]);
     expect(listCatalog(index, { tag: "coding" }).map((item) => item.id)).toEqual([

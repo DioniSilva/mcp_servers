@@ -113,6 +113,10 @@ The catalog includes discovery entries for the separate Obsidian Integration MCP
 - `obsidian-integration-tools`
 - `obsidian-kb-workflow`
 
+It also includes a security workflow skill:
+
+- `handle-mend-vulnerability`
+
 Use those entries to install `obsidian-integration-mcp`, run `obsidian.health`, and create Karpathy-style Obsidian knowledge bases.
 
 ## Catalog Structure
